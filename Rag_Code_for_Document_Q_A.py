@@ -22,7 +22,7 @@ def print_embedding_cost(texts):
 # Function to crete vectors of the chunks
 def create_embeddings(chunk):
     from langchain_openai import OpenAIEmbeddings
-    from langchain_community.vectorstores import Chroma 
+    from langchain.vectorstores import Chroma
     embedding = OpenAIEmbeddings(model='text-embedding-3-small')
     vector_store = Chroma.from_documents(chunk, embedding)
     return vector_store
