@@ -20,11 +20,62 @@ def print_embedding_cost(texts):
     return total_tokens, total_tokens/1000*0.0004
 
 # Function to crete vectors of the chunks
-def create_embeddings(chunk):
+#'''def create_embeddings(chunk):
+#   from langchain_openai import OpenAIEmbeddings
+#    from langchain.vectorstores import Chroma
+#    embedding = OpenAIEmbeddings(model='text-embedding-3-small')
+ #   vector_store = Chroma.from_documents(chunk, embedding)
+ #   return vector_store'''
+
+def delete_pinecone_index(index_name='all'):
+    import pinecone
+    pc = pinecone.Pinecone()
+    
+    if index_name == 'all':
+        indexes = pc.list_indexes().names()
+        st.write('Deleting all indexes ... ')
+        for index in indexes:
+            pc.delete_index(index)
+        st.write('Ok')
+    else:
+        print(f'Deleting index {index_name} ...', end='')
+        pc.delete_index(index_name)
+        st.write('Ok')
+
+def insert_or_fetch_embeddings(index_name, chunks):
+    import pinecone
+    from langchain_community.vectorstores import Pinecone
     from langchain_openai import OpenAIEmbeddings
-    from langchain.vectorstores import Chroma
-    embedding = OpenAIEmbeddings(model='text-embedding-3-small')
-    vector_store = Chroma.from_documents(chunk, embedding)
+    from pinecone import PodSpec
+    from pinecone import ServerlessSpec
+    
+    pc = pinecone.Pinecone()
+    embeddings = OpenAIEmbeddings(model='text-embedding-3-small', dimensions=1536)
+    
+    if index_name in pc.list_indexes().names():
+        print(f'Index {index_name} already exists. Loading embeddings...',end='')
+        vector_store = Pinecone.from_existing_index(index_name, embeddings)
+        print('Ok')
+    else:
+        # creating the index and embedding the chunks into the index 
+        print(f'Creating index {index_name} and embeddings ...', end='')
+
+        # creating a new index
+        pc.create_index(
+            name=index_name,
+            dimension=1536,
+            metric='cosine',
+            spec=ServerlessSpec(
+                cloud="aws",
+                region="us-east-1"
+        ) 
+        )
+
+        # processing the input documents, generating embeddings using the provided `OpenAIEmbeddings` instance,
+        # inserting the embeddings into the index and returning a new Pinecone vector store object. 
+        vector_store = Pinecone.from_documents(chunks, embeddings, index_name=index_name)
+        print('Ok')
+        
     return vector_store
 
 #Function to create question annd answer to google
@@ -169,6 +220,8 @@ if __name__ == "__main__":
             api_key=st.text_input('Gemini API Key :', type='password')
             if api_key:
                 os.environ['GOOGLE_API_KEY'] = api_key
+        pinecone_api_key=st.text_input('Pinecone API Key :', type='password')
+        os.environ['PINECONE_API_KEY'] = pinecone_api_key
 
         uploaded_file = st.file_uploader('Uploa a file :', type=['pdf','txt','docx'])
         chunk_size =st.number_input('Chunk size:', min_value=100,max_value=2048,value=2000,disabled=True)
@@ -186,11 +239,11 @@ if __name__ == "__main__":
                 data=load_data(file_name)
                 chunks=chunk_data(data,chunk_size=chunk_size)
                 st.write(f'Chunk size: {chunk_size}, Chunk length: {len(chunks)}')
-
+                delete_pinecone_index()
                 tokens,embedding_cost=print_embedding_cost(chunks)
                 st.write(f'Embedding cost: $ {embedding_cost: .4f}')
-
-                vector_store = create_embeddings(chunks)
+                index_name='askadocument'
+                vector_store = insert_or_fetch_embeddings(index_name=index_name, chunks=chunks)
                 st.session_state.vs = vector_store
                 st.session_state.dt = data
                 st.session_state.fp=file_name
