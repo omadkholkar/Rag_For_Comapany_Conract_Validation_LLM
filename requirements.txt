@@ -9,3 +9,4 @@ tiktoken
 google-generativeai
 langchain-google-genai
 langchain_community
+fitz

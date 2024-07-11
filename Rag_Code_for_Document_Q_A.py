@@ -1,5 +1,5 @@
 def load_data(file_path):
-     from langchain.document_loaders import PyPDFLoader
+     from langchain_community.document_loaders import PyPDFLoader
      loader = PyPDFLoader(file_path)
      data = loader.load()
      return data
@@ -89,7 +89,6 @@ Explanation : Provide me the reason why it met the criteria or why it not met th
 #Function to retrive answer from openAI
 def ask_question_answer(q,Vectors,data,k,file_path):
     import streamlit as st
-    import fitz  # PyMuPDF
     import io
     from langchain.chains import RetrievalQA
     from langchain_openai import ChatOpenAI
