@@ -192,12 +192,24 @@ Explanation : Provide me the reason why it met the criteria or why it not met th
         print("Answer:",answer)
         simillar_text=retriever.vectorstore.similarity_search(one_question)
         print(simillar_text)
-        ans=answer['result']
-        st.write(f"{i+1}){Criterias[i]}")
-        st.write(ans)
-        st.write("Source document text:")
-        st.write(f"{simillar_text[0].page_content}")
-        st.write(f"From page No. {simillar_text[0].metadata['page']}")
+        ans=answer
+        
+        st.write(f"{i+1}"+" "+f"{Criterias[i]}")
+        #st.write(ans)
+        #print("Line 199",ans)
+        parts = ans['result'].split('\n\n')
+        # First part is the criteria
+        criteria = parts[0].split(':')[1]
+
+        # Second part is the explanation
+        explanation = parts[1].split(':')[1]
+        st.markdown(f':blue[**Criteria Met :**]{criteria}')
+        st.markdown(f':blue[**Explanation :**]{explanation}')
+        #st.markdown(f':blue[**Explanation**]{ans}')
+        #st.markdown(f"<span style='color:blue'>{"Source document text:"}</span>", unsafe_allow_html=True)
+        #st.markdown blue['Source document text'])
+        st.markdown(f":blue[**Source document text :**]{simillar_text[0].page_content}")
+        st.write(f":blue[**Page NO :**]{simillar_text[0].metadata['page']}")
         
         
 # Function to Clear history session          
@@ -209,7 +221,7 @@ def clear_history():
 if __name__ == "__main__":
     import os
     import streamlit as st
-    st.subheader('LLM Question-Answering Application for company Documments')
+    st.subheader('Contract Compliance Validator Using Generative AI')
     with st.sidebar:
         LLm_model=st.radio('Select LLM model to answer',['Gemini','OpenAI'])
         if LLm_model=='OpenAI':
